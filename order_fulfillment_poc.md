@@ -7,7 +7,7 @@ Create a **proof of concept (POC)** Django application demonstrating an event-dr
 - Google Pub/Sub (Publish/Subscribe)
 - Webhook ingress and egress
 - RequestCatcher for testing external callbacks
-  https://requestcatcher.com/
+  https://kainos-systems.requestcatcher.com/
 
 The system should:
 1. Accept an **Order Created** webhook (ingress).

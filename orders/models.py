@@ -9,6 +9,14 @@ class Order(models.Model):
     external_ref = models.CharField(
         max_length=255, unique=True, db_index=True, help_text="Unique order ID from external system"
     )
+    idempotency_key = models.CharField(
+        max_length=255,
+        unique=True,
+        db_index=True,
+        null=True,
+        blank=True,
+        help_text="Idempotency key to prevent duplicate processing",
+    )
     customer_name = models.CharField(max_length=255)
     customer_email = models.EmailField()
     shipping_address = models.TextField()
@@ -45,4 +53,6 @@ class OrderItem(models.Model):
     @property
     def line_total(self):
         """Calculate total price for this line item."""
-        return self.quantity * self.unit_price
+        if self.quantity is not None and self.unit_price is not None:
+            return self.quantity * self.unit_price
+        return None

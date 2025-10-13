@@ -21,6 +21,9 @@ class OrderWebhookSerializer(serializers.Serializer):
     """
 
     order_id = serializers.CharField(max_length=255, source="external_ref")
+    idempotency_key = serializers.CharField(
+        max_length=255, required=False, allow_blank=True, allow_null=True
+    )
     customer = serializers.DictField()
     items = OrderItemSerializer(many=True)
     shipping_address = serializers.CharField()
@@ -43,14 +46,24 @@ class OrderWebhookSerializer(serializers.Serializer):
     def create(self, validated_data):
         """
         Create Order and related OrderItems from validated webhook data.
+        Handles idempotency - if order with same idempotency_key exists, returns existing order.
         """
         # Extract nested data
         customer_data = validated_data.pop("customer")
         items_data = validated_data.pop("items")
+        idempotency_key = validated_data.get("idempotency_key")
+
+        # Check for existing order with same idempotency key
+        if idempotency_key:
+            existing_order = Order.objects.filter(idempotency_key=idempotency_key).first()
+            if existing_order:
+                # Return existing order without creating duplicate
+                return existing_order
 
         # Create Order
         order = Order.objects.create(
             external_ref=validated_data["external_ref"],
+            idempotency_key=idempotency_key,
             customer_name=customer_data["name"],
             customer_email=customer_data["email"],
             shipping_address=validated_data["shipping_address"],

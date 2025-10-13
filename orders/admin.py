@@ -17,13 +17,14 @@ class OrderAdmin(admin.ModelAdmin):
 
     list_display = (
         "external_ref",
+        "idempotency_key",
         "customer_name",
         "customer_email",
         "total",
         "created_at",
     )
     list_filter = ("created_at",)
-    search_fields = ("external_ref", "customer_name", "customer_email")
+    search_fields = ("external_ref", "idempotency_key", "customer_name", "customer_email")
     readonly_fields = ("created_at",)
     inlines = [OrderItemInline]
 
@@ -31,7 +32,7 @@ class OrderAdmin(admin.ModelAdmin):
         (
             "Order Information",
             {
-                "fields": ("external_ref", "total", "created_at"),
+                "fields": ("external_ref", "idempotency_key", "total", "created_at"),
             },
         ),
         (
