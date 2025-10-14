@@ -176,3 +176,7 @@ PUBSUB_SUBSCRIPTION_ORDER_CREATED = config(
 
 # Outgoing webhook URL (e.g., RequestCatcher for testing)
 WEBHOOK_OUTGOING_URL = config('WEBHOOK_OUTGOING_URL', default='https://example.com/')
+
+# Webhook secret for HMAC signature verification (ingress webhooks)
+# If not set, signature verification is skipped (development only)
+WEBHOOK_SECRET = config('WEBHOOK_SECRET', default=None)

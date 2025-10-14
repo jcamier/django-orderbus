@@ -3,10 +3,12 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.db import transaction, IntegrityError
+from django.conf import settings
 
 from .models import Order
 from .serializers import OrderWebhookSerializer
 from .publishers import publish_order_created
+from .security import verify_webhook_signature, verify_shopify_webhook
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +17,14 @@ logger = logging.getLogger(__name__)
 def order_webhook(request):
     """
     Webhook endpoint to receive order creation events.
+
+    Security:
+        - Verifies HMAC signature if WEBHOOK_SECRET is configured
+        - Supports standard HMAC (X-Webhook-Signature) and Shopify format (X-Shopify-Hmac-SHA256)
+
+    Expected Headers:
+        - X-Webhook-Signature: <hmac_hex_signature>  (standard)
+        - X-Shopify-Hmac-SHA256: <base64_signature>  (Shopify)
 
     Expected payload:
     {
@@ -36,7 +46,36 @@ def order_webhook(request):
         201 Created: {"ok": true, "order_id": "SO-10045", "created": true}
         200 OK: {"ok": true, "order_id": "SO-10045", "created": false}  # Duplicate request
         400 Bad Request: {"errors": {...}}
+        401 Unauthorized: {"error": "Invalid signature"}  # HMAC verification failed
     """
+    # HMAC Signature Verification
+    webhook_secret = getattr(settings, "WEBHOOK_SECRET", None)
+
+    if webhook_secret:
+        # Get signature from headers (support multiple formats)
+        signature = request.headers.get("X-Webhook-Signature")
+        shopify_signature = request.headers.get("X-Shopify-Hmac-SHA256")
+
+        # Verify signature
+        is_valid = False
+
+        if shopify_signature:
+            # Shopify format (base64)
+            is_valid = verify_shopify_webhook(request.body, shopify_signature)
+        elif signature:
+            # Standard hex format
+            is_valid = verify_webhook_signature(request.body, signature)
+        else:
+            logger.warning("No signature header provided")
+
+        if not is_valid:
+            logger.warning(f"Webhook signature verification failed from IP: {request.META.get('REMOTE_ADDR')}")
+            return Response(
+                {"error": "Invalid signature"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        logger.info("Webhook signature verified successfully")
+
     serializer = OrderWebhookSerializer(data=request.data)
 
     if not serializer.is_valid():
