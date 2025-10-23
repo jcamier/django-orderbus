@@ -180,3 +180,13 @@ WEBHOOK_OUTGOING_URL = config('WEBHOOK_OUTGOING_URL', default='https://example.c
 # Webhook secret for HMAC signature verification (ingress webhooks)
 # If not set, signature verification is skipped (development only)
 WEBHOOK_SECRET = config('WEBHOOK_SECRET', default=None)
+
+# ==============================================================================
+# Shopify Configuration
+# ==============================================================================
+
+SHOPIFY_ADMIN_TOKEN = config('SHOPIFY_ADMIN_TOKEN', default=None)
+SHOPIFY_API_URL = config('SHOPIFY_API_URL', default=None)
+SHOPIFY_API_VERSION = config('SHOPIFY_API_VERSION', default='2024-10')
+SHOPIFY_API_SCOPES = config('SHOPIFY_API_SCOPES', default='read_orders,write_orders')
+SHOPIFY_TIMEOUT = config('SHOPIFY_TIMEOUT', default=30)
