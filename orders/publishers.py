@@ -57,3 +57,4 @@ def publish_order_created(order):
         logger.error(f"Failed to publish order.created event for {order.external_ref}: {e}")
         raise
 
+

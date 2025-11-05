@@ -1,0 +1,48 @@
+# Prometheus configuration for Django Orderbus
+# This is a template - remote_write will be added by generate-prometheus-config.sh if Grafana Cloud credentials are provided
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'orderbus-local'
+    replica: '0'
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Django application - django-prometheus metrics
+  # Note: If Django runs on host machine, use 'host.docker.internal:8000'
+  #       If Django runs in Docker, use 'django:8000' (service name)
+  - job_name: 'django-orderbus'
+    static_configs:
+      - targets: ['host.docker.internal:8000']  # Django on host (Docker Desktop)
+        labels:
+          service: 'orderbus'
+          environment: 'development'
+          source: 'django-prometheus'
+      # Uncomment below if Django runs in Docker:
+      # - targets: ['django:8000']
+      #   labels:
+      #     service: 'orderbus'
+      #     environment: 'development'
+      #     source: 'django-prometheus'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # OpenTelemetry metrics are exported via OTLP to Jaeger
+  # Jaeger aggregates these metrics and exposes them at /metrics
+  # These are already scraped by the 'jaeger' job below
+
+  # Jaeger metrics
+  - job_name: 'jaeger'
+    static_configs:
+      - targets: ['jaeger:14269']
+    metrics_path: '/metrics'
+
+
+

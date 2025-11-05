@@ -49,4 +49,7 @@ postgres_data/
 
 # Other files
 cred.txt
+*service-account*.json
+*credentials*.json
+*.key
 

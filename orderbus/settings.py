@@ -41,13 +41,16 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Third-party apps
     'rest_framework',
+    'django_prometheus',  # Must be before other apps
     # Local apps
     'orders',
 ]
 
 MIDDLEWARE = [
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',  # Must be first
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django_prometheus.middleware.PrometheusAfterMiddleware',  # After sessions
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -81,7 +84,7 @@ WSGI_APPLICATION = 'orderbus.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'django_prometheus.db.backends.postgresql',  # Prometheus-instrumented DB
         'NAME': config('DB_NAME', default='orderdb'),
         'USER': config('DB_USER', default='postgres'),
         'PASSWORD': config('DB_PASS', default='postgres'),
@@ -190,3 +193,29 @@ SHOPIFY_API_URL = config('SHOPIFY_API_URL', default=None)
 SHOPIFY_API_VERSION = config('SHOPIFY_API_VERSION', default='2024-10')
 SHOPIFY_API_SCOPES = config('SHOPIFY_API_SCOPES', default='read_orders,write_orders')
 SHOPIFY_TIMEOUT = config('SHOPIFY_TIMEOUT', default=30)
+
+# ==============================================================================
+# OpenTelemetry Configuration
+# ==============================================================================
+
+OTEL_ENABLED = config('OTEL_ENABLED', default=True, cast=bool)
+OTEL_SERVICE_NAME = config('OTEL_SERVICE_NAME', default='django-orderbus')
+OTEL_EXPORTER_TYPE = config('OTEL_EXPORTER_TYPE', default='jaeger')  # 'jaeger' or 'otlp'
+OTEL_EXPORTER_JAEGER_ENDPOINT = config(
+    'OTEL_EXPORTER_JAEGER_ENDPOINT', default='http://localhost:14268/api/traces'
+)
+OTEL_EXPORTER_OTLP_ENDPOINT = config(
+    'OTEL_EXPORTER_OTLP_ENDPOINT', default='http://localhost:4318/v1/traces'
+)
+OTEL_EXPORTER_METRICS_ENABLED = config(
+    'OTEL_EXPORTER_METRICS_ENABLED', default=True, cast=bool
+)
+# Note: OTel metrics are exported via OTLP to Jaeger, not directly to Prometheus
+JAEGER_AGENT_HOST = config('JAEGER_AGENT_HOST', default='localhost')
+JAEGER_AGENT_PORT = config('JAEGER_AGENT_PORT', default=6831, cast=int)
+
+# ==============================================================================
+# Prometheus Configuration
+# ==============================================================================
+
+PROMETHEUS_EXPORT_MIGRATIONS = config('PROMETHEUS_EXPORT_MIGRATIONS', default=False, cast=bool)
