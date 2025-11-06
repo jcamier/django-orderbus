@@ -208,7 +208,7 @@ OTEL_EXPORTER_OTLP_ENDPOINT = config(
     'OTEL_EXPORTER_OTLP_ENDPOINT', default='http://localhost:4318/v1/traces'
 )
 OTEL_EXPORTER_METRICS_ENABLED = config(
-    'OTEL_EXPORTER_METRICS_ENABLED', default=True, cast=bool
+    'OTEL_EXPORTER_METRICS_ENABLED', default=False, cast=bool
 )
 # Note: OTel metrics are exported via OTLP to Jaeger, not directly to Prometheus
 JAEGER_AGENT_HOST = config('JAEGER_AGENT_HOST', default='localhost')
@@ -219,3 +219,49 @@ JAEGER_AGENT_PORT = config('JAEGER_AGENT_PORT', default=6831, cast=int)
 # ==============================================================================
 
 PROMETHEUS_EXPORT_MIGRATIONS = config('PROMETHEUS_EXPORT_MIGRATIONS', default=False, cast=bool)
+
+# ==============================================================================
+# Logging Configuration
+# ==============================================================================
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'orders': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'orderbus': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}

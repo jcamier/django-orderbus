@@ -10,7 +10,7 @@ setup:  ## Initial setup: start containers, install deps, migrate
 	docker-compose up -d
 	make build
 	sleep 5
-	python manage.py migrate
+	.venv/bin/python manage.py migrate
 	@echo "✓ Setup complete. Run 'make createsuperuser' to create admin user."
 
 up:  ## Start all containers
@@ -29,20 +29,20 @@ pubsub-logs:  ## Tail logs from Pub/Sub emulator
 	docker-compose logs -f pubsub-emulator
 
 shell:  ## Django shell
-	python manage.py shell
+	.venv/bin/python manage.py shell
 
 migrate:  ## Run database migrations
-	python manage.py makemigrations
-	python manage.py migrate
+	.venv/bin/python manage.py makemigrations
+	.venv/bin/python manage.py migrate
 
 createsuperuser:  ## Create Django superuser
-	python manage.py createsuperuser
+	.venv/bin/python manage.py createsuperuser
 
 runserver:  ## Start Django development server
-	python manage.py runserver
+	.venv/bin/python manage.py runserver
 
 subscriber:  ## Start Pub/Sub subscriber (blocking)
-	python manage.py subscribe_order_created
+	.venv/bin/python manage.py subscribe_order_created
 
 format:  ## Format code with black
 	black .

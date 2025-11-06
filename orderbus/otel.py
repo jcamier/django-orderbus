@@ -2,14 +2,15 @@
 OpenTelemetry configuration for Django Orderbus.
 """
 import logging
-from opentelemetry import trace, metrics
+from opentelemetry import trace
+# from opentelemetry import metrics  # Disabled - Jaeger doesn't support OTLP metrics
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+# from opentelemetry.sdk.metrics import MeterProvider
+# from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+# from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
 from opentelemetry.instrumentation.django import DjangoInstrumentor
 from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
@@ -67,29 +68,26 @@ def setup_otel():
     Psycopg2Instrumentor().instrument()
 
     # Set up metrics provider if enabled
-    metrics_enabled = getattr(settings, "OTEL_EXPORTER_METRICS_ENABLED", True)
+    # Note: Jaeger all-in-one doesn't support OTLP metrics endpoint (/v1/metrics)
+    # We use django-prometheus for application metrics instead
+    metrics_enabled = getattr(settings, "OTEL_EXPORTER_METRICS_ENABLED", False)
     if metrics_enabled:
-        # Use OTLP metrics exporter to send metrics to Jaeger's OTLP endpoint
-        # Jaeger all-in-one exposes metrics at /metrics which Prometheus can scrape
-        otlp_metrics_endpoint = otlp_endpoint.replace("/v1/traces", "/v1/metrics")
-        metric_exporter = OTLPMetricExporter(endpoint=otlp_metrics_endpoint)
-
-        # Create periodic exporting metric reader
-        metric_reader = PeriodicExportingMetricReader(
-            exporter=metric_exporter,
-            export_interval_millis=15000,  # Export every 15 seconds
+        logger.warning(
+            "OTel metrics export is enabled but Jaeger doesn't support OTLP metrics. "
+            "Use django-prometheus for metrics instead. Disabling OTel metrics export."
         )
-
-        # Set up meter provider
-        meter_provider = MeterProvider(
-            metric_readers=[metric_reader],
-            resource=resource,
-        )
-        metrics.set_meter_provider(meter_provider)
-
-        logger.info(
-            f"OpenTelemetry metrics enabled, exporting to: {otlp_metrics_endpoint}"
-        )
+        # Uncomment below if you have an OTLP collector that supports metrics
+        # otlp_metrics_endpoint = otlp_endpoint.replace("/v1/traces", "/v1/metrics")
+        # metric_exporter = OTLPMetricExporter(endpoint=otlp_metrics_endpoint)
+        # metric_reader = PeriodicExportingMetricReader(
+        #     exporter=metric_exporter,
+        #     export_interval_millis=15000,
+        # )
+        # meter_provider = MeterProvider(
+        #     metric_readers=[metric_reader],
+        #     resource=resource,
+        # )
+        # metrics.set_meter_provider(meter_provider)
 
     logger.info(f"OpenTelemetry instrumentation enabled for service: {service_name}")
 
