@@ -28,9 +28,14 @@ def setup_otel():
         return
 
     service_name = getattr(settings, "OTEL_SERVICE_NAME", "django-orderbus")
+    # Jaeger endpoint: Direct export to Jaeger backend (for local dev only)
+    # In production, use OTLP endpoint pointing to OpenTelemetry Collector instead
     jaeger_endpoint = getattr(
         settings, "OTEL_EXPORTER_JAEGER_ENDPOINT", "http://localhost:14268/api/traces"
     )
+    # OTLP endpoint: Recommended for production
+    # Should point to OpenTelemetry Collector (sidecar/daemonset), not directly to backend
+    # Collector handles batching, sampling, retries, and forwards to backend (Jaeger/Tempo/etc.)
     otlp_endpoint = getattr(
         settings, "OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318/v1/traces"
     )
@@ -47,11 +52,16 @@ def setup_otel():
 
     if exporter_type == "otlp":
         # Use OTLP exporter (recommended for production)
+        # In production: endpoint should point to OpenTelemetry Collector
+        #   - Kubernetes: otel-collector service (e.g., http://otel-collector:4318/v1/traces)
+        #   - Docker Compose: otel-collector service name
+        #   - Local dev: can point directly to Jaeger's OTLP receiver (port 4318)
         exporter = OTLPSpanExporter(endpoint=otlp_endpoint)
         logger.info(f"Using OTLP exporter with endpoint: {otlp_endpoint}")
     else:
-        # Use Jaeger exporter (simpler for local development)
-        # For local Docker setup, use collector_endpoint (HTTP)
+        # Use Jaeger exporter (for local development only)
+        # Direct export to Jaeger backend - not recommended for production
+        # Production should use OTLP exporter with OpenTelemetry Collector as intermediary
         exporter = JaegerExporter(
             collector_endpoint=jaeger_endpoint,
         )
